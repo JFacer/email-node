@@ -1,0 +1,22 @@
+version: '3.4'
+
+services:
+  email-node:
+    image: email-node
+    build:
+      context: ..
+      dockerfile: ./.devcontainer/Dockerfile
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    environment:
+      NODE_ENV: development
+    ports:
+      - 3000:3000
+      - 9229:9229
+    #command: "npm run dev"
+
+networks:
+  default:
+    # Use a custom driver
+    driver: bridge

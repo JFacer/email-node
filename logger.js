@@ -1,4 +1,6 @@
+const { format } = require("express/lib/response");
 const winston = require("winston");
+const { File, Console } = require("winston/lib/winston/transports");
 
 class Logger {
 
@@ -7,47 +9,32 @@ class Logger {
             level: options.logLevel,
             defaultMeta: { service: name },
             transports: [
-                new winston.transports.File({ 
+                new File({ 
                     filename: './logs/' + name + '.log',
                     timestamp: true,
-                    colorize: true,
+                    colorize: false,
                     format: winston.format.combine(
-                        winston.format.timestamp(),
+                        winston.format.timestamp({
+                            format: 'YYYYMMDD HH:mm:ss.SSS'
+                        }),
                         winston.format.errors({ stack: true }),
-                        winston.format.json()
+                        winston.format.json(),
+                        winston.format.printf(info => `${[info.timestamp]} ${info.service}>${info.level}: ${info.message}`),
                     )
                 })
             ]
         });
-
-/*             transports: [
-                new winston.transports.Console({
-                    format: winston.format.combine(
-                        winston.format.timestamp(),
-                        winston.format.metadata({ fillExcept: ['timestamp', 'service', 'level', 'message'] }),
-                        winston.format.colorize(),
-                        this.winstonConsoleFormat()
-                    )
-                }),
-                new winston.transports.File({ 
-                    filename: './logs/' + name + '.log',
-                    format: winston.format.combine(
-                        winston.format.errors({ stack: true }),
-                        winston.format.metadata(),
-                        winston.format.json()
-                    )
-                })
-            ]
-        }); */
 
         //
         // If we're not in production then log to the `console` with the format:
         // `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
         //
         if (process.env.NODE_ENV !== 'production') {
-            this.logger.add(new winston.transports.Console({
+            this.logger.add(new Console({
                 format: winston.format.combine(
-                    winston.format.timestamp(),
+                    winston.format.timestamp({
+                        format: 'DD.MM.YY HH:mm:ss.SSS'
+                    }),
                     winston.format.metadata({ fillExcept: ['timestamp', 'service', 'level', 'message'] }),
                     winston.format.colorize(),
                     this.winstonConsoleFormat()
@@ -59,12 +46,11 @@ class Logger {
     winstonConsoleFormat() {
         return winston.format.printf(({ timestamp, level, message, metadata }) => {
             const metadataString = metadata != null ? JSON.stringify(metadata) : '';
-    
-            if (process.env.LOG_TIMESTAMP) {
-                return `[${timestamp}]  [${level}]  ${message}.  ${'metadata: ' + metadataString}`;
+            if (process.env._) {
+                return `[${timestamp}]  [${level}]  ${message}  ${'metadata: ' + metadataString}`;
             } else {
                 //console.log (`[${level}]  ${message}.  ${'-->  ' + metadataString}`);
-                return `[${level}]  ${message}.  ${'-->  ' + metadataString}`;
+                return `[${timestamp}][${level}] ${message}`;
             }
 
         })

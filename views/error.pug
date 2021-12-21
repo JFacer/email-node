@@ -1,7 +1,6 @@
-extends layout
+extends layout/layout.pug
 
 block content
-  h1= message
+  h1= error.message
   h2= error.status
-  h2= error.message
-  pre #{error.stack}
+  code #{error.stack}
