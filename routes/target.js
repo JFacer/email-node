@@ -1,53 +1,118 @@
-const env = require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const fs = require("fs");
 const path = require("path");
-const nodemailer = require("nodemailer");
 const logger = require("../logger");
+const xlsReader = require('xlsx');
+const utils = require('./utils');
 
 /* GET home page. */
 router.get("/:page", function (req, res, next) {
   const strTargetFile = path.join(__dirname, "../target", req.params.page);
   logger.info(`Requested page for send: ${strTargetFile}`);
+  let data = [];
+  
+  try {
+    /** INITIALIZE MESSAGE */
+    let message = {
+      from: "soporte@actualisapbolivia.com",
+      cc: "soporte@actualisapbolivia.com",
+      subject: "ACB - Notificacion Centro de Soporte",
+    };
 
-  let transporter = nodemailer.createTransport({
-    host: env.parsed.SMTPSERV,
-    port: env.parsed.SMTPPORT,
-    secure: false, // upgrade later with STARTTLS
-    debug: false,
-    logger: false,
-    requireTLS: true,
-    auth: {
-      user: env.parsed.SMTPUSER,
-      pass: env.parsed.SMTPPWD,
-    },
-    tls: {
-      // do not fail on invalid certs
-      //rejectUnauthorized: false
-      cyphers: "SSLv3",
-    },
-  });
+    /* READ HTML FILE */
+    const content = fs.readFileSync(strTargetFile, "utf8");
 
-  // verify connection configuration
-  transporter.verify(function (error, success) {
-    if (error) {
-      logger.error(error);
-    } else {
-      logger.info("Server is ready to take our messages ", success);
-    }
-  });
+    /* SETUP MAIL TRANSPORT */
+    const transporter = utils.defineTransporter();
 
-  const emails = ["j.fernando.acevedo.b@gmail.com", "facevedo@actualisapbolivia.com"];
-/*   const emails = [
-    "mmenacho@landicorp.com.bo", 
-    "josueapaze@gmail.com", 
+    /** READ CUSTOMER LIST */
+    //const sheets = xlsFile.SheetNames
+    const xlsFile = xlsReader.readFile('public/Audit.xlsx');
+    const sheetJSON = xlsReader.utils.sheet_to_json(xlsFile.Sheets["CustomerList"]);
+    let count = 0;
+    let resp = { sent: [] };
+
+    sheetJSON.forEach((line) => {
+      const custData = utils.parseLine(line);
+      let emails = [];
+      if (custData.test) {
+        emails = [
+          "j.fernando.acevedo.b@gmail.com",
+          "facevedo@actualisapbolivia.com",
+        ];
+      } else {
+        emails.push(custData.emails);
+      }
+      if (custData.send) {
+        count += 1;
+        emails.forEach((email, index, emails) => {
+          message.to = email;
+          message.html = utils.prepareContent(content, custData);
+          message.attachments = utils.setAttachments(custData);
+  
+          resp["sent"].push( transporter.sendMail(message) );
+
+        });
+      }
+    });
+
+    //transporter.close();
+    //res.status(200).send(resp);
+
+    const allPromise = Promise.all( resp.sent );
+
+    allPromise.then((values) => {
+        //logger.info(`Message sent \n ${JSON.stringify(values)}`);
+        transporter.close();
+        res.status(200).send(values);
+      })
+      .catch((error) => {
+        error.status = 500;
+        logger.error(
+          `Some error ocurred target:sendmail\n    ${error.message}`
+        );
+        throw error;
+      });
+
+  } catch (error) {
+    logger.error(`Some error ocurred target:sendmail:\n    ${error.message}`);
+    error.status = 404;
+    next(error);
+  }
+});
+
+/* 
+  for(let i = 0; i < sheets.length; i++)
+  {
+    const sheet = xlsReader.utils.sheet_to_json(
+      xlsFile.Sheets[xlsFile.SheetNames[i]])
+    //data = `"${xlsFile.SheetNames[i]}": []`;
+    data[xlsFile.SheetNames[i]] = temp;
+    //temp.forEach((res) => {
+      //data.push(res)
+      //console.log(data);
+      //data.push(res);
+    //})
+  }
+  const emails = [
+    "j.fernando.acevedo.b@gmail.com",
+    "facevedo@actualisapbolivia.com",
+  ]; 
+  
+  const emails = [
+    "mmenacho@landicorp.com.bo",
+    "sreguerin@landicorp.com.bo",
+    "josueapaze@gmail.com",
+    "titosuarezcatala@gmail.com",
     "Hugo.Alcazar@ypfbtransporte.com.bo", 
-    "carlos.eguez@ypfbrefinacion.com.bo"  
-  ]; */
-  let resp = [];
+  ];
+
+  let resp = { sent: [] };
 
   try {
+    let transporter = defineTransporter();
+
     const data = fs.readFileSync(strTargetFile, "utf8");
     // Message object
     let message = {
@@ -62,35 +127,31 @@ router.get("/:page", function (req, res, next) {
       // HTML body
       html: data,
     };
-    
-    emails.forEach( ( email, index, emails ) => {
 
+    emails.forEach((email, index, emails) => {
       message.to = email;
- 
-      transporter
-        .sendMail(message)
-        .then((info) => {
-          logger.info(`Message sent \n ${JSON.stringify(info)}`);
-          resp.push(info);
-          if (index == emails.length-1) {
-            res.status(200).send(resp);
-          }
-        })
-        .catch((error) => {
-          error.status = 500;
-          logger.error(
-            `Some error ocurred target:sendmail\n    ${error.message}`
-          );
-          throw error;
-        });
+
+      resp["sent"].push( transporter.sendMail(message) );
     });
+
+    const allPromise = Promise.all(resp.sent);
+
+    allPromise.then((values) => {
+        logger.info(`Message sent \n ${JSON.stringify(values)}`);
+        res.status(200).send(values);
+      })
+      .catch((error) => {
+        error.status = 500;
+        logger.error(
+          `Some error ocurred target:sendmail\n    ${error.message}`
+        );
+        throw error;
+      });
+
   } catch (error) {
-    logger.error(
-      `Some error ocurred target:sendmail:\n    ${error.message}`
-    );
+    logger.error(`Some error ocurred target:sendmail:\n    ${error.message}`);
     error.status = 404;
     next(error);
-  };
-});
+  } */
 
 module.exports = router;

@@ -85,8 +85,8 @@ td {
 } 
 
 .header-content {
-    max-width: 500px;
-    width: 500px;
+    max-width: 100%;
+    width: 100%;
     padding: 55px 15px 55px 15px;
     font-size: 9px;
     font-family: Jura,sans-serif;
@@ -97,7 +97,7 @@ td {
 
 .title {
     font-size: 22px;
-    padding: 10px 10px 0px 10px;
+    padding: 10px 0px 10px 0px;
     font-family: Jura,sans-serif;
     vertical-align: middle;
     text-align:center;

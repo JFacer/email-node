@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const logger = require("../logger");
+const xlsReader = require('xlsx')
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -11,6 +12,30 @@ router.get('/logger', function(req, res, next) {
   logger.info('I am an info log.', {name: '/logger', message: 'Login ... message', moreinfo: "Other info for logging."});
   return res.json({logged: true});
 });
+
+router.get('/xls', function(req, res, next) {
+  const xlsFile = xlsReader.readFile('public/Audit.xlsx');
+  let data = [];
+  
+  const sheets = xlsFile.SheetNames
+    
+  for(let i = 0; i < sheets.length; i++)
+  {
+    const temp = xlsReader.utils.sheet_to_json(
+      xlsFile.Sheets[xlsFile.SheetNames[i]]);
+    //data = `"${xlsFile.SheetNames[i]}": []`;
+    //data[xlsFile.SheetNames[i]] = temp;
+    temp.forEach((line) => {
+      data.push(line)
+      //console.log(data);
+      //data.push(res);
+    });
+  }
+    
+  // Printing data
+  res.status(200).send(data);
+});
+
 
 Post = {
   find: (id) => {

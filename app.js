@@ -16,16 +16,15 @@ const app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-process.stdout.write("TEST process stdout \n");
-
 //app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+//app.use(express.urlencoded({ extended: false }));
+//app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
  
 app.use('/', indexRouter);
-app.use('/users', usersRouter); 
+app.use('/xls', indexRouter);
+//app.use('/users', usersRouter); 
 app.use('/prep', sourceRouter);
 app.use('/send', targetRouter);
 

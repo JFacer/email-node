@@ -1,5 +1,7 @@
-FROM node:17.2-alpine
-RUN apk update && apk add git
+FROM node:17.4-bullseye
+
+#RUN apk update && apk add git
+RUN apt-get update && apt-get install git
 
 ENV NODE_ENV=development
 ENV LOG_TIMESTAMP=true
