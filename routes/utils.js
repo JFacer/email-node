@@ -53,6 +53,7 @@ function setAttachments(custData) {
 function defineTransporter() {
   let transporter = nodemailer.createTransport({
     pool: true,
+    maxConnections: 3,
     host: env.parsed.SMTPSERV,
     port: env.parsed.SMTPPORT,
     secure: false, // upgrade later with STARTTLS

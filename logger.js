@@ -15,11 +15,10 @@ class Logger {
                     colorize: false,
                     format: winston.format.combine(
                         winston.format.timestamp({
-                            format: 'YYYYMMDD HH:mm:ss.SSS'
+                            format: 'YYYY.MM.DD HH:mm:ss.SSS'
                         }),
                         winston.format.errors({ stack: true }),
-                        winston.format.json(),
-                        winston.format.printf(info => `${[info.timestamp]} ${info.service}>${info.level}: ${info.message}`),
+                        winston.format.printf(info => `${[info.timestamp]} ${info.service} [${info.level.toUpperCase()}] > ${info.message}`),
                     )
                 })
             ]
@@ -44,13 +43,13 @@ class Logger {
     }
 
     winstonConsoleFormat() {
-        return winston.format.printf(({ timestamp, level, message, metadata }) => {
+        return winston.format.printf(({ timestamp, service, level, message, metadata }) => {
             const metadataString = metadata != null ? JSON.stringify(metadata) : '';
             if (process.env._) {
-                return `[${timestamp}]  [${level}]  ${message}  ${'metadata: ' + metadataString}`;
+                return `[${service}] [${level}] ${message} -> ${'metadata: ' + metadataString}`;
             } else {
                 //console.log (`[${level}]  ${message}.  ${'-->  ' + metadataString}`);
-                return `[${timestamp}][${level}] ${message}`;
+                return `${timestamp} [${service}] [${level}] ${message}`;
             }
 
         })
